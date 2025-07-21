@@ -381,8 +381,8 @@ function NovaOrdem({ onOrdemCriada, linhas }) {
 }
 
 // Componente lista de ordens
-function ListaOrdens() {
-  const [ordens, setOrdens] = useState([]);
+function ListaOrdens({ atualizar }) {
+    const [ordens, setOrdens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -391,7 +391,7 @@ function ListaOrdens() {
     try {
       const response = await fetch('/api/ordens');
       const data = await response.json();
-      
+
       if (data.success) {
         setOrdens(data.data);
         setError(null);
@@ -415,7 +415,7 @@ function ListaOrdens() {
 
       const data = await response.json();
       if (data.success) {
-        carregarOrdens(); // Recarregar lista
+        carregarOrdens(); // Atualiza lista após mudança
       } else {
         alert('Erro: ' + data.error);
       }
@@ -425,7 +425,6 @@ function ListaOrdens() {
   };
 
   const deletarOrdem = async (id, codigo) => {
-    // Usar window.confirm explicitamente
     const confirmacao = window.confirm(`Tem certeza que deseja deletar a ordem ${codigo}?`);
     if (!confirmacao) return;
 
@@ -437,7 +436,7 @@ function ListaOrdens() {
       const data = await response.json();
       if (data.success) {
         alert('✅ Ordem deletada com sucesso!');
-        carregarOrdens(); // Recarregar lista
+        carregarOrdens();
       } else {
         alert('❌ Erro: ' + data.error);
       }
@@ -448,7 +447,7 @@ function ListaOrdens() {
 
   useEffect(() => {
     carregarOrdens();
-  }, []);
+  }, [atualizar]); // Recarrega sempre que atualizar mudar
 
   if (loading) return <div className="loading">⏳ Carregando ordens...</div>;
   if (error) return <div className="error">❌ {error}</div>;
@@ -1547,6 +1546,8 @@ function App() {
   const [modoOperacional, setModoOperacional] = useState(false);
   const [mostrarDashboard, setMostrarDashboard] = useState(false);
   const [modoGestao, setModoGestao] = useState(false);
+  const [atualizarOrdens, setAtualizarOrdens] = useState(false);
+
 
   // Função global para ver detalhes
   window.verDetalhes = (ordemId) => {
@@ -1679,9 +1680,11 @@ function App() {
         <StatusSistema />
         <NovaOrdem 
           linhas={linhas} 
-          onOrdemCriada={() => window.location.reload()} 
+          onOrdemCriada={() => setAtualizarOrdens(prev => !prev)} 
         />
-        <ListaOrdens />
+
+        <ListaOrdens atualizar={atualizarOrdens} />
+
         <LinhasProducao />
         <ProdutosSAP />
       </main>

@@ -141,15 +141,14 @@ app.get('/api/ordens', async (req, res) => {
     }
 });
 
-// Criar nova ordem - COM CÓDIGO AUTOMÁTICO
+// Criar nova ordem com subetapas automáticas
 app.post('/api/ordens', async (req, res) => {
     const { connectDB } = require('./database');
     let client;
     
     try {
-        let { linha_producao_id, item_entrada, item_saida, quantidade_inicial, observacoes } = req.body;
-        
-        // Validações básicas (codigo não é mais obrigatório)
+        const { linha_producao_id, item_entrada, item_saida, quantidade_inicial, observacoes, criado_por } = req.body;
+
         if (!linha_producao_id || !item_entrada || !item_saida) {
             return res.status(400).json({
                 success: false,
@@ -158,17 +157,14 @@ app.post('/api/ordens', async (req, res) => {
         }
 
         client = await connectDB();
-        if (!client) {
-            return res.status(500).json({ success: false, error: 'Erro conexão banco' });
-        }
+        await client.query('BEGIN');
 
-        // GERAR CÓDIGO AUTOMATICAMENTE
+        // Gerar código automático
         const hoje = new Date();
         const ano = hoje.getFullYear();
         const mes = String(hoje.getMonth() + 1).padStart(2, '0');
         const dia = String(hoje.getDate()).padStart(2, '0');
-        
-        // Buscar último número sequencial do dia
+
         const queryUltimoNumero = `
             SELECT COALESCE(MAX(
                 CAST(SUBSTRING(codigo FROM 'OP-${ano}${mes}${dia}-(\\d+)') AS INTEGER)
@@ -176,51 +172,83 @@ app.post('/api/ordens', async (req, res) => {
             FROM ordem_producao 
             WHERE codigo LIKE 'OP-${ano}${mes}${dia}-%'
         `;
-        
+
         const resultUltimo = await client.query(queryUltimoNumero);
         const proximoNumero = (resultUltimo.rows[0].ultimo_numero || 0) + 1;
         const numeroFormatado = String(proximoNumero).padStart(3, '0');
-        
-        // Código final: OP-20241216-001, OP-20241216-002, etc.
+
         const codigoAutomatico = `OP-${ano}${mes}${dia}-${numeroFormatado}`;
 
-        const query = `
+        // Inserir ORDEM
+        const queryOrdem = `
             INSERT INTO ordem_producao 
             (codigo, linha_producao_id, item_entrada, item_saida, quantidade_inicial, observacoes)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *
+            RETURNING id, codigo
         `;
         
-        const values = [
-            codigoAutomatico, 
-            parseInt(linha_producao_id), 
-            item_entrada, 
-            item_saida, 
-            parseFloat(quantidade_inicial) || 0, 
+        const ordemValues = [
+            codigoAutomatico,
+            parseInt(linha_producao_id),
+            item_entrada,
+            item_saida,
+            parseFloat(quantidade_inicial) || 0,
             observacoes || ''
         ];
-        
-        const result = await client.query(query, values);
-        
-        console.log(`✅ Ordem criada com código: ${codigoAutomatico}`);
-        
+
+        const resultOrdem = await client.query(queryOrdem, ordemValues);
+        const ordemId = resultOrdem.rows[0].id;
+
+        // Inserir SUBETAPAS (1 e 99)
+        const dataAtual = new Date().toISOString();
+
+        const querySubetapa = `
+            INSERT INTO subetapa (ordem_producao_id, numero_etapa, descricao, item_codigo, data_criacao, criado_por, ativa)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
+
+        // Subetapa 1 (entrada)
+        await client.query(querySubetapa, [
+            ordemId,
+            1,
+            'Entrada do Processo',
+            item_entrada,
+            dataAtual,
+            criado_por || 'Sistema',
+            true
+        ]);
+
+        // Subetapa 99 (saída)
+        await client.query(querySubetapa, [
+            ordemId,
+            99,
+            'Saída do Processo',
+            item_saida,
+            dataAtual,
+            criado_por || 'Sistema',
+            true
+        ]);
+
+        await client.query('COMMIT');
+
         res.status(201).json({
             success: true,
-            message: `Ordem criada com código: ${codigoAutomatico}`,
-            data: result.rows[0]
+            message: `Ordem criada com código: ${codigoAutomatico} e subetapas geradas`,
+            data: {
+                id: ordemId,
+                codigo: codigoAutomatico
+            }
         });
-        
+
     } catch (error) {
+        if (client) await client.query('ROLLBACK');
         console.error('Erro criar ordem:', error);
-        if (error.code === '23505') { // Duplicate key
-            res.status(400).json({ success: false, error: 'Erro interno - código duplicado' });
-        } else {
-            res.status(500).json({ success: false, error: error.message });
-        }
+        res.status(500).json({ success: false, error: error.message });
     } finally {
         if (client) await client.end();
     }
 });
+
 
 // Atualizar status da ordem
 app.put('/api/ordens/:id/status', async (req, res) => {

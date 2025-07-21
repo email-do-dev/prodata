@@ -7,7 +7,7 @@ const dbConfig = {
     port: 5432,
     database: 'prodatadb',
     user: 'postgres',
-    password: 'mata1894'
+    password: 'postgres'
 };
 
 // Função para conectar
