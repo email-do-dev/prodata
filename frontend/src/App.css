@@ -35,7 +35,7 @@
 
 
 .App-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #171680 0%, #1A4E9A 100%);
   padding: 2rem;
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -99,7 +99,7 @@
   background: #f8f9fa;
   padding: 1rem;
   border-radius: 6px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #1A4E9A;
 }
 
 .status-card h3 {
@@ -129,7 +129,7 @@
 }
 
 .tabela th {
-  background-color: #667eea;
+  background-color: #1A4E9A;
   color: white;
   padding: 0.75rem;
   text-align: left;
@@ -156,7 +156,7 @@
 .loading {
   text-align: center;
   padding: 2rem;
-  color: #667eea;
+  color: #1A4E9A;
   font-size: 1.1rem;
 }
 
@@ -171,7 +171,7 @@
 }
 
 .botao-refresh {
-  background-color: #667eea;
+  background-color: #1A4E9A;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -182,7 +182,7 @@
 }
 
 .botao-refresh:hover {
-  background-color: #5a6fd8;
+  opacity: 0.9;
 }
 
 /* Adicionar no final do App.css */
@@ -242,7 +242,7 @@
 .form-grupo select:focus,
 .form-grupo textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #171680;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -277,7 +277,7 @@
 }
 
 .botao-salvar {
-  background-color: #667eea;
+  background-color: #171680;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -288,7 +288,7 @@
 }
 
 .botao-salvar:hover {
-  background-color: #5a6fd8;
+  opacity: 0.9;
 }
 
 .botao-salvar:disabled {
@@ -523,7 +523,7 @@
 /* ========== INTERFACE OPERACIONAL TABLET ========== */
 .interface-operacional {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #171680 0%, #1A4E9A 100%);
   color: white;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;

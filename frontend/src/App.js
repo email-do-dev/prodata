@@ -279,6 +279,44 @@ function NovaOrdem({ onOrdemCriada, linhas }) {
     });
   };
 
+  const [produtos, setProdutos] = useState([]);
+  const [error, setError] = useState(null);
+
+  const carregarProdutos = () => {
+    setLoading(true);
+    setError(null);
+    
+    fetch('/api/sap/produtos?limit=20')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          setProdutos(data.data);
+          setError(null);
+        } else {
+          setError('SAP temporariamente indisponível');
+          setProdutos([]); // Limpar produtos antigos
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('SAP offline - dados indisponíveis');
+        setProdutos([]);
+        setLoading(false);
+      });
+  };
+
+  // Tentar carregar na primeira vez (mas não bloquear se falhar)
+  useEffect(() => {
+    carregarProdutos();
+  }, []);
+
+  console.log("produtos", produtos);
+
   return (
     <div className="secao">
       <div className="secao-header">
@@ -321,7 +359,7 @@ function NovaOrdem({ onOrdemCriada, linhas }) {
               required
             />
           </div>
-
+{/* 
           <div className="form-grupo">
             <label>Item de Saída:</label>
             <input
@@ -332,6 +370,26 @@ function NovaOrdem({ onOrdemCriada, linhas }) {
               placeholder="Ex: SARDINHA_LATA_125G"
               required
             />
+          </div> */}
+          <div className="form-grupo">
+            <label>Item de Saída:</label>
+            <select
+              name="item_saida"
+              value={formData.item_saida}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Selecione um item</option>
+              {/* <option value="SARDINHA_LATA_125G">SARDINHA_LATA_125G</option>
+              <option value="ATUM_LATA_170G">ATUM_LATA_170G</option>
+              <option value="SALMAO_DEFUMADO_200G">SALMÃO_DEFUMADO_200G</option>
+              <option value="BACALHAU_1KG">BACALHAU_1KG</option> */}
+              {produtos.length > 0 && produtos.map(produto => (
+                <option key={produto.id} value={produto.id}>
+                  {produto.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-grupo">
