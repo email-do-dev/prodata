@@ -1,0 +1,6 @@
+export const StatusEnum = {
+  OPEN: 'ABERTA',
+  IN_PROGRESS: 'EM ANDAMENTO',
+  CLOSED: 'FECHADA',
+  CANCELED: 'CANCELADA',
+}
