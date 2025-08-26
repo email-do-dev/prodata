@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "tsx watch src/server.ts",
     "test": "echo \"Testes serão implementados\" && exit 1"
   },
   "keywords": [
@@ -16,12 +16,28 @@
   ],
   "author": "THARACK",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "chart.js": "^4.5.0",
     "express": "^5.1.0",
     "mssql": "^11.0.1",
     "pg": "^8.16.0",
     "react-chartjs-2": "^5.3.0"
+  },
+  "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/express": "^5.0.3",
+    "@types/mssql": "^9.1.7",
+    "@types/node": "^24.2.0",
+    "@types/pg": "^8.15.5",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
   }
 }

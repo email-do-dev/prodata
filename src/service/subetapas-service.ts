@@ -1,0 +1,274 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Client } from 'pg'
+import { connectDB } from '../database'
+
+export class SubetapasService {
+  private client: Client | null = null
+
+  private async getClient(): Promise<Client> {
+    if (!this.client) {
+      this.client = await connectDB()
+      if (!this.client) {
+        throw new Error('Erro ao conectar ao banco de dados')
+      }
+    }
+    return this.client
+  }
+
+  async buscarSubetapas(ordemId: number) {
+    const client = await this.getClient()
+
+    const query = `
+      SELECT
+        s.*,
+        COALESCE(SUM(r.peso_kg), 0) as peso_total,
+        COUNT(r.id) as total_registros,
+        MAX(r.data_registro) as ultimo_peso
+      FROM subetapa s
+      LEFT JOIN registro_peso r ON s.id = r.subetapa_id
+      WHERE s.ordem_producao_id = $1
+      GROUP BY s.id
+      ORDER BY s.numero_etapa
+    `
+
+    const result = await client.query(query, [ordemId])
+    return result.rows
+  }
+
+  async criarSubetapa(ordemId: number, data: any) {
+    const client = await this.getClient()
+
+    const { numero_etapa, descricao, item_codigo, criado_por } = data
+
+    if (!numero_etapa || !item_codigo) {
+      throw new Error('Campos obrigatórios: numero_etapa, item_codigo')
+    }
+
+    const isSistema = !criado_por || criado_por.toLowerCase() === 'sistema'
+    const ativa = !isSistema
+    const data_ativacao = ativa ? new Date() : null
+
+    const query = `
+      INSERT INTO subetapa (
+        ordem_producao_id,
+        numero_etapa,
+        descricao,
+        item_codigo,
+        criado_por,
+        ativa,
+        data_ativacao
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `
+
+    const values = [
+      ordemId,
+      parseInt(numero_etapa),
+      descricao || `Etapa ${numero_etapa}`,
+      item_codigo,
+      criado_por || 'Sistema',
+      ativa,
+      data_ativacao,
+    ]
+
+    const result = await client.query(query, values)
+    const subetapaCriada = result.rows[0]
+
+    const ordemResult = await client.query(
+      `SELECT linha_producao_id FROM ordem_producao WHERE id = $1`,
+      [ordemId],
+    )
+
+    const linhaProducaoId = ordemResult.rows[0]?.linha_producao_id
+
+    if (linhaProducaoId) {
+      await client.query(
+        `UPDATE linha_producao SET num_subetapas = num_subetapas + 1 WHERE id = $1`,
+        [linhaProducaoId],
+      )
+    }
+
+    return subetapaCriada
+  }
+
+  async buscarPesos(subetapaId: number) {
+    const client = await this.getClient()
+
+    const query = `
+      SELECT
+        r.*,
+        s.numero_etapa,
+        s.item_codigo,
+        s.descricao as etapa_descricao,
+        o.codigo as ordem_codigo
+      FROM registro_peso r
+      JOIN subetapa s ON r.subetapa_id = s.id
+      JOIN ordem_producao o ON s.ordem_producao_id = o.id
+      WHERE r.subetapa_id = $1
+      ORDER BY r.data_registro DESC
+    `
+
+    const result = await client.query(query, [subetapaId])
+    return result.rows
+  }
+
+  async registrarPeso(subetapaId: number, data: any) {
+    const client = await this.getClient()
+
+    const {
+      operador,
+      quantidade_unidades,
+      tipo_medida,
+      executor,
+      estacao,
+      peso_kg,
+    } = data
+
+    if (!operador || !peso_kg) {
+      throw new Error('Campos obrigatórios: operador, peso_kg')
+    }
+
+    const peso = parseFloat(peso_kg)
+    if (peso < 0) {
+      throw new Error('Peso deve ser maior que zero')
+    }
+
+    const query = `
+      INSERT INTO registro_peso
+      (subetapa_id, operador, peso_kg, quantidade_unidades, tipo_medida, executor, estacao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `
+
+    const values = [
+      subetapaId,
+      operador.toUpperCase(),
+      peso,
+      quantidade_unidades ? parseInt(quantidade_unidades) : 1,
+      tipo_medida || 'KG',
+      executor || '',
+      estacao || 'WEB',
+    ]
+
+    const result = await client.query(query, values)
+    return result.rows[0]
+  }
+
+  async buscarPosicoes() {
+    const client = await this.getClient()
+
+    const query = `
+      SELECT id, descricao
+      FROM posicao_linha
+      ORDER BY descricao ASC
+    `
+
+    const result = await client.query(query)
+    return result.rows
+  }
+
+  async calcularRendimento(ordemId: number) {
+    const client = await this.getClient()
+
+    const query = `
+      WITH pesos_por_etapa AS (
+        SELECT
+          s.numero_etapa,
+          s.descricao,
+          s.item_codigo,
+          COALESCE(SUM(r.peso_kg), 0) as peso_total
+        FROM subetapa s
+        LEFT JOIN registro_peso r ON s.id = r.subetapa_id
+        WHERE s.ordem_producao_id = $1 AND s.ativa = true
+        GROUP BY s.id, s.numero_etapa, s.descricao, s.item_codigo
+        ORDER BY s.numero_etapa
+      ),
+      rendimentos AS (
+        SELECT
+          *,
+          LAG(peso_total) OVER (ORDER BY numero_etapa) as peso_anterior,
+          CASE
+            WHEN LAG(peso_total) OVER (ORDER BY numero_etapa) > 0
+            THEN ROUND((peso_total / LAG(peso_total) OVER (ORDER BY numero_etapa) * 100)::numeric, 2)
+            ELSE NULL
+          END as rendimento_etapa,
+          CASE
+            WHEN FIRST_VALUE(peso_total) OVER (ORDER BY numero_etapa) > 0
+            THEN ROUND((peso_total / FIRST_VALUE(peso_total) OVER (ORDER BY numero_etapa) * 100)::numeric, 2)
+            ELSE NULL
+          END as rendimento_geral
+        FROM pesos_por_etapa
+      )
+      SELECT * FROM rendimentos
+    `
+
+    const result = await client.query(query, [ordemId])
+    return result.rows
+  }
+
+  async ativarSubetapa(
+    subetapaId: number,
+    ativa: boolean,
+    data_ativacao: string,
+  ) {
+    const client = await this.getClient()
+
+    const query = `
+    UPDATE subetapa
+    SET
+      ativa = $1,
+      data_ativacao = $2
+    WHERE id = $3
+    RETURNING *
+  `
+    const values = [ativa, data_ativacao, subetapaId]
+
+    const result = await client.query(query, values)
+
+    return result.rows[0]
+  }
+
+  async concluirSubetapa(
+    subetapaId: number,
+    ativa: boolean,
+    data_conclusao: string,
+  ) {
+    const client = await this.getClient()
+
+    const query = `
+    UPDATE subetapa
+    SET
+      ativa = $1,
+      data_conclusao = $2
+    WHERE id = $3
+    RETURNING *
+  `
+    const values = [ativa, data_conclusao, subetapaId]
+
+    const result = await client.query(query, values)
+
+    return result.rows[0]
+  }
+
+  async closeConnection() {
+    if (this.client) {
+      await this.client.end()
+      this.client = null
+    }
+  }
+
+  async listaRegistroPesos(subetapaId: number) {
+    const client = await this.getClient()
+
+    const query = `
+      SELECT *
+      FROM registro_peso
+      WHERE subetapa_id = $1
+      ORDER BY created_at DESC
+    `
+
+    const result = await client.query(query, [subetapaId])
+    return result.rows
+  }
+}
