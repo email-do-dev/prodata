@@ -17,14 +17,13 @@ export class OrdensService {
     await this.connect()
 
     const query = `
-      SELECT 
-        o.*,
-        l.nome as linha_nome,
-        EXTRACT(EPOCH FROM (NOW() - o.data_criacao))/3600 as horas_desde_criacao
-      FROM ordem_producao o
-      JOIN linha_producao l ON o.linha_producao_id = l.id
-      ORDER BY o.data_criacao DESC
-    `
+    SELECT 
+      o.*,
+      l.nome as linha_nome
+    FROM ordem_producao o
+    JOIN linha_producao l ON o.linha_producao_id = l.id
+    ORDER BY o.data_criacao DESC
+  `
     const result = await this.client!.query(query)
     await this.disconnect()
     return result.rows
@@ -37,13 +36,13 @@ export class OrdensService {
       item_entrada,
       item_saida,
       quantidade_inicial,
-      observacoes,
+      observacoes
       // peso_sap,
     } = data
 
     if (!linha_producao_id || !item_entrada || !item_saida) {
       throw new Error(
-        'Campos obrigatórios: linha_producao_id, item_entrada, item_saida',
+        'Campos obrigatórios: linha_producao_id, item_entrada, item_saida'
       )
     }
 
@@ -82,7 +81,7 @@ export class OrdensService {
         item_entrada,
         item_saida,
         parseFloat(quantidade_inicial) || 0,
-        observacoes || '',
+        observacoes || ''
       ]
 
       const resultOrdem = await this.client!.query(queryOrdem, ordemValues)
@@ -105,7 +104,7 @@ export class OrdensService {
         dataAtual,
         'Sistema',
         false,
-        null,
+        null
       ])
 
       // Subetapa 99 (saída)
@@ -117,14 +116,14 @@ export class OrdensService {
         dataAtual,
         'Sistema',
         false,
-        null,
+        null
       ])
 
       await this.client!.query('COMMIT')
 
       return {
         id: ordemId,
-        codigo: codigoAutomatico,
+        codigo: codigoAutomatico
       }
     } catch (error) {
       await this.client!.query('ROLLBACK')
@@ -194,5 +193,20 @@ export class OrdensService {
     await this.disconnect()
 
     return result.rows
+  }
+
+  async changeOrderStatus(id: number) {
+    await this.connect()
+
+    const checkQuery = 'SELECT status FROM ordem_producao WHERE id = $1'
+    const checkResult = await this.client!.query(checkQuery, [id])
+
+    if (checkResult.rows.length === 0) {
+      throw new Error('Ordem não encontrada')
+    }
+
+    const changeOrderStatusQuery = `
+
+    `
   }
 }

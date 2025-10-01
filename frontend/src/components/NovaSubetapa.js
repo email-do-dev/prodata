@@ -1,132 +1,184 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
-export function NovaSubetapa({ ordemId, onSubetapaCriada, setShowNovaSubetapa, showNovaSubetapa }) {
+export function NovaSubetapa({
+  ordemId,
+  onSubetapaCriada,
+  setShowNovaSubetapa,
+  showNovaSubetapa,
+  codigoOrdem
+}) {
   const [formData, setFormData] = useState({
-    numero_etapa: '',
     descricao: '',
-    item_codigo: '',
+    item_codigo: codigoOrdem || '',
     criado_por: ''
-  });
-  const [operadores, setOperadores] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingOperadores, setLoadingOperadores] = useState(true);
+  })
+  const [operadores, setOperadores] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadingOperadores, setLoadingOperadores] = useState(true)
 
   useEffect(() => {
     const fetchOperadores = async () => {
       try {
-        const response = await fetch('/api/operadores');
-        const data = await response.json();
+        const response = await fetch('/api/operadores')
+        const data = await response.json()
         if (data.success) {
-          setOperadores(data.data);
+          setOperadores(data.data)
         } else {
-          console.error('Erro ao carregar operadores:', data.error);
+          console.error('Erro ao carregar operadores:', data.error)
         }
       } catch (error) {
-        console.error('Erro ao carregar operadores:', error);
+        console.error('Erro ao carregar operadores:', error)
       } finally {
-        setLoadingOperadores(false);
+        setLoadingOperadores(false)
       }
-    };
-
-    fetchOperadores();
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.criado_por) {
-      alert('Selecione um operador!');
-      return;
     }
 
-    setLoading(true);
+    fetchOperadores()
+  }, [])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!formData.criado_por) {
+      alert('Selecione um operador!')
+      return
+    }
+
+    setLoading(true)
     try {
       const response = await fetch(`/api/ordens/${ordemId}/subetapas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.success) {
-        alert('✅ Subetapa criada com sucesso!');
-        onSubetapaCriada();
+        alert('✅ Subetapa criada com sucesso!')
+        onSubetapaCriada()
       } else {
-        alert('❌ Erro: ' + data.error);
+        alert('❌ Erro: ' + data.error)
       }
     } catch (error) {
-      alert('❌ Erro: ' + error.message);
+      alert('❌ Erro: ' + error.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (!showNovaSubetapa) return null;
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      item_codigo: codigoOrdem || ''
+    }))
+  }, [codigoOrdem])
+
+  const descricaoOptions = [
+    { value: 'bater', label: 'Bater' },
+    { value: 'corte', label: 'Corte' },
+    { value: 'cozimento', label: 'Cozimento' },
+    { value: 'envase', label: 'Envase' },
+    { value: 'evisceramento', label: 'Evisceramento' },
+    { value: 'filetamento', label: 'Filetamento' },
+    { value: 'glaiser', label: 'Glaiser' },
+    { value: 'hidratacao', label: 'Hidratação' },
+    { value: 'recravacao', label: 'Recravação' },
+    { value: 'salga', label: 'Salga' },
+    { value: 'tirar_pele', label: 'Tirar Pele' }
+  ]
+
+  if (!showNovaSubetapa) return null
 
   return (
-    <div 
-      className="dialog-overlay" 
+    <div
+      className="dialog-overlay"
       onClick={() => setShowNovaSubetapa(false)} // Fecha clicando fora
     >
-      <div 
-        className="dialog-content" 
+      <div
+        className="dialog-content"
         onClick={(e) => e.stopPropagation()} // Impede que clique no conteúdo feche
       >
         <h3>➕ Nova Subetapa</h3>
         <form onSubmit={handleSubmit} className="form-nova-subetapa-tablet">
+          <label htmlFor="item_codigo" className="label-form-nova-subetapa">
+            Código
+          </label>
           <input
-            type="number"
-            className='input-form-nova-subetapa-tablet'
-            placeholder="Nº Etapa (1-98)"
-            value={formData.numero_etapa}
-            onChange={(e) => setFormData({...formData, numero_etapa: e.target.value})}
-            min="1" max="98"
-            required
-          />
-          <input
+            id="item_codigo"
             type="text"
-            className='input-form-nova-subetapa-tablet'
+            className="input-form-nova-subetapa-tablet"
             placeholder="Item/Código"
             value={formData.item_codigo}
-            onChange={(e) => setFormData({...formData, item_codigo: e.target.value})}
+            onChange={(e) =>
+              setFormData({ ...formData, item_codigo: e.target.value })
+            }
             required
           />
-          <input
-            type="text"
-            className='input-form-nova-subetapa-tablet'
-            placeholder="Descrição"
+
+          <label htmlFor="descricao" className="label-form-nova-subetapa">
+            Descrição
+          </label>
+          <select
+            id="descricao"
+            className="input-form-nova-subetapa-tablet"
             value={formData.descricao}
-            onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-          />
+            onChange={(e) =>
+              setFormData({ ...formData, descricao: e.target.value })
+            }
+            required
+          >
+            <option value="">Selecione uma descrição</option>
+            {descricaoOptions.map((op) => (
+              <option key={op.value} value={op.value}>
+                {op.label}
+              </option>
+            ))}
+          </select>
 
           {loadingOperadores ? (
             <p>⏳ Carregando operadores...</p>
           ) : (
-            <select
-              className='input-form-nova-subetapa-tablet'
-              value={formData.criado_por}
-              onChange={(e) => setFormData({...formData, criado_por: e.target.value})}
-              required
-            >
-              <option value="">Selecione Operador</option>
-              {operadores.map(op => (
-                <option key={op.id} value={op.nome}>
-                  {op.nome} (Mat: {op.matricula})
-                </option>
-              ))}
-            </select>
+            <>
+              <label htmlFor="operador" className="label-form-nova-subetapa">
+                Operador
+              </label>
+              <select
+                id="operador"
+                className="input-form-nova-subetapa-tablet"
+                value={formData.criado_por}
+                onChange={(e) =>
+                  setFormData({ ...formData, criado_por: e.target.value })
+                }
+                required
+              >
+                <option value="">Selecione Operador</option>
+                {operadores.map((op) => (
+                  <option key={op.id} value={op.nome}>
+                    {op.nome} (Mat: {op.matricula})
+                  </option>
+                ))}
+              </select>
+            </>
           )}
 
           <div className="buttons-section-form-nova-subetapa-tablet">
-            <button type="button" className='botao-cancelar-op' onClick={() => setShowNovaSubetapa(false)}>
+            <button
+              type="button"
+              className="botao-cancelar-op"
+              onClick={() => setShowNovaSubetapa(false)}
+            >
               ❌ Cancelar
             </button>
-            <button type="submit" disabled={loading} className="botao-confirmar-op">
+            <button
+              type="submit"
+              disabled={loading}
+              className="botao-confirmar-op"
+            >
               {loading ? '⏳' : '💾'} Criar
             </button>
           </div>
         </form>
       </div>
     </div>
-  );
+  )
 }

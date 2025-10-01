@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import Select from 'react-select'; 
+import React, { useState, useEffect } from 'react'
+import Select from 'react-select'
 
 export function NovaOrdem({ onOrdemCriada, linhas }) {
-  const [mostrarForm, setMostrarForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [mostrarForm, setMostrarForm] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     linha_producao_id: null,
     item_entrada: null,
     item_saida: null,
     quantidade_inicial: '',
     executor: ''
-  });
+  })
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
       const payload = {
@@ -23,101 +23,151 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
         item_saida: formData.item_saida?.label || '',
         quantidade_inicial: parseFloat(formData.quantidade_inicial) || 0,
         executor: formData.executor || ''
-      };
+      }
 
       const response = await fetch('/api/ordens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        body: JSON.stringify(payload)
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (data.success) {
-
-        alert(`✅ ${data.message}`);
+        alert(`✅ ${data.message}`)
         setFormData({
           linha_producao_id: null,
           item_entrada: null,
           item_saida: null,
           quantidade_inicial: '',
           executor: ''
-        });
-        setMostrarForm(false);
-        onOrdemCriada();
+        })
+        setMostrarForm(false)
+        onOrdemCriada()
       } else {
-        console.log('Erro ao criar ordem:', data);
-        alert('❌ Erro: ' + data.error);
+        console.log('Erro ao criar ordem:', data)
+        alert('❌ Erro: ' + data.error)
       }
     } catch (error) {
-      alert('❌ Erro de conexão: ' + error.message);
+      alert('❌ Erro de conexão: ' + error.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const [produtosEntrada, setProdutosEntrada] = useState([]);
-  const [produtosSaida, setProdutosSaida] = useState([]);
-  const [error, setError] = useState(null);
+  const [produtosEntrada, setProdutosEntrada] = useState([])
+  const [produtosSaida, setProdutosSaida] = useState([])
+  const [error, setError] = useState(null)
 
   const carregarProdutosEntrada = () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     fetch('/api/sap/produtos-entrada')
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-          setProdutosEntrada(data.data);
+          setProdutosEntrada(data.data)
         } else {
-          setError('SAP temporariamente indisponível');
-          setProdutosEntrada([]);
+          setError('SAP temporariamente indisponível')
+          setProdutosEntrada([])
         }
       })
       .catch(() => {
-        setError('SAP offline - dados indisponíveis');
-        setProdutosEntrada([]);
+        setError('SAP offline - dados indisponíveis')
+        setProdutosEntrada([])
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
   const carregarProdutosSaida = () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     fetch('/api/sap/produtos-saida')
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-          setProdutosSaida(data.data);
+          setProdutosSaida(data.data)
         } else {
-          setError('SAP temporariamente indisponível');
-          setProdutosSaida([]);
+          setError('SAP temporariamente indisponível')
+          setProdutosSaida([])
         }
       })
       .catch(() => {
-        setError('SAP offline - dados indisponíveis');
-        setProdutosSaida([]);
+        setError('SAP offline - dados indisponíveis')
+        setProdutosSaida([])
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
+  const handleAddPeso = (valor) => {
+    const pesoAtual = parseFloat(formData.quantidade_inicial) || 0
+    const novoPeso = (pesoAtual + valor).toFixed(1)
+    setFormData({ ...formData, quantidade_inicial: novoPeso })
+  }
+  const handleClearPeso = () => {
+    setFormData({ ...formData, quantidade_inicial: '' })
+  }
+
+  const [operadores, setOperadores] = useState([])
+  const [loadingOperadores, setLoadingOperadores] = useState(true)
   useEffect(() => {
-    carregarProdutosEntrada();
-    carregarProdutosSaida();
-  }, []);
+    const fetchOperadores = async () => {
+      try {
+        const response = await fetch('/api/operadores')
+        const data = await response.json()
+        if (data.success) {
+          setOperadores(data.data)
+        } else {
+          console.error('Erro ao carregar operadores:', data.error)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar operadores:', error)
+      } finally {
+        setLoadingOperadores(false)
+      }
+    }
+
+    fetchOperadores()
+  }, [])
+  useEffect(() => {
+    carregarProdutosEntrada()
+    carregarProdutosSaida()
+  }, [])
 
   const formatarOpcoes = (produtos) =>
-    produtos.map(p => ({
+    produtos.map((p) => ({
       value: p.codigo || p.id,
       label: `${p.codigo ? `[${p.codigo}] ` : ''}${p.nome}`
-    }));
+    }))
 
   const formatarLinhas = (linhas) =>
-    linhas.map(linha => ({
+    linhas.map((linha) => ({
       value: linha.id,
       label: linha.nome
-    }));
+    }))
+  const customStyles = {
+    option: (provided, state) => ({
+      ...provided,
+      color: '#171680',
+      backgroundColor: state.isFocused ? '#eee' : 'white',
+      display: 'flex'
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      color: '#171680',
+      display: 'flex',
+      justifyContent: 'flex-start',
+      textAlign: 'left'
+    }),
+    placeholder: (provided) => ({
+      ...provided,
+      display: 'flex',
+      justifyContent: 'flex-start',
+      textAlign: 'left'
+    })
+  }
 
   return (
     <div className="secao">
@@ -139,10 +189,13 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
             <Select
               options={formatarLinhas(linhas)}
               value={formData.linha_producao_id}
-              onChange={(selected) => setFormData({ ...formData, linha_producao_id: selected })}
+              onChange={(selected) =>
+                setFormData({ ...formData, linha_producao_id: selected })
+              }
               placeholder="Selecione a linha"
               isClearable
               noOptionsMessage={() => 'Nenhuma linha encontrada'}
+              styles={customStyles}
             />
           </div>
 
@@ -152,17 +205,20 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
             <Select
               options={formatarOpcoes(produtosEntrada)}
               value={formData.item_entrada}
-              onChange={(selected) => setFormData({ ...formData, item_entrada: selected })}
+              onChange={(selected) =>
+                setFormData({ ...formData, item_entrada: selected })
+              }
               placeholder="Digite código ou nome do produto"
               isClearable
               noOptionsMessage={() => 'Nenhum produto encontrado'}
               filterOption={(option, inputValue) => {
-                const input = inputValue.toLowerCase();
+                const input = inputValue.toLowerCase()
                 return (
                   option.label.toLowerCase().includes(input) ||
                   option.value.toString().toLowerCase().includes(input)
-                );
+                )
               }}
+              styles={customStyles}
             />
           </div>
 
@@ -172,17 +228,20 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
             <Select
               options={formatarOpcoes(produtosSaida)}
               value={formData.item_saida}
-              onChange={(selected) => setFormData({ ...formData, item_saida: selected })}
+              onChange={(selected) =>
+                setFormData({ ...formData, item_saida: selected })
+              }
               placeholder="Digite código ou nome do produto"
               isClearable
               noOptionsMessage={() => 'Nenhum produto encontrado'}
               filterOption={(option, inputValue) => {
-                const input = inputValue.toLowerCase();
+                const input = inputValue.toLowerCase()
                 return (
                   option.label.toLowerCase().includes(input) ||
                   option.value.toString().toLowerCase().includes(input)
-                );
+                )
               }}
+              styles={customStyles}
             />
           </div>
 
@@ -202,19 +261,95 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
             />
           </div>
 
-          {/* Observações */}
-          <div className="form-grupo">
-            <label>Enviado para:</label>
-            <textarea
-              name="executor"
-              value={formData.executor}
-              onChange={(e) =>
-                setFormData({ ...formData, executor: e.target.value })
-              }
-              placeholder="Nome do executor..."
-              rows="3"
-            />
+          {/* Botoes quantidade */}
+          <div
+            className="botoes-peso"
+            style={{
+              display: 'flex',
+              gap: '8px',
+              marginTop: '8px',
+              flexWrap: 'wrap'
+            }}
+          >
+            {[5, 10, 20].map((valor) => (
+              <button
+                type="button"
+                key={valor}
+                onClick={() => handleAddPeso(valor)}
+                style={{
+                  flex: '1',
+                  padding: '10px',
+                  fontSize: '1rem',
+                  background: '#1A4E9A',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                +{valor}
+              </button>
+            ))}
+
+            {/* <button */}
+            {/*   className="botoes-peso" */}
+            {/*   style={{ */}
+            {/*     flex: '1', */}
+            {/*     padding: '10px', */}
+            {/*     fontSize: '1rem', */}
+            {/*     background: '#1A4E9A', */}
+            {/*     color: '#fff', */}
+            {/*     border: 'none', */}
+            {/*     borderRadius: '6px', */}
+            {/*     cursor: 'pointer' */}
+            {/*   }} */}
+            {/* > */}
+            {/*   Ok */}
+            {/* </button> */}
+
+            <button
+              type="button"
+              onClick={handleClearPeso}
+              style={{
+                flex: '1',
+                padding: '10px',
+                fontSize: '1rem',
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              Limpar
+            </button>
           </div>
+
+          {loadingOperadores ? (
+            <p>⏳ Carregando operadores...</p>
+          ) : (
+            <div className="form-grupo">
+              <label>Enviado para:</label>
+              <Select
+                options={formatarOpcoes(operadores)}
+                value={formData.criado_por}
+                onChange={(selected) =>
+                  setFormData({ ...formData, criado_por: selected })
+                }
+                placeholder="Digite código ou nome do operador"
+                isClearable
+                noOptionsMessage={() => 'Nenhum operador encontrado'}
+                filterOption={(option, inputValue) => {
+                  const input = inputValue.toLowerCase()
+                  return (
+                    option.label.toLowerCase().includes(input) ||
+                    option.value.toString().toLowerCase().includes(input)
+                  )
+                }}
+                styles={customStyles}
+              />
+            </div>
+          )}
 
           {/* Botões */}
           <div className="form-acoes">
@@ -225,16 +360,13 @@ export function NovaOrdem({ onOrdemCriada, linhas }) {
             >
               ❌ Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="botao-salvar"
-            >
+            <button type="submit" disabled={loading} className="botao-salvar">
               {loading ? '⏳ Criando...' : '💾 Criar Ordem'}
             </button>
           </div>
         </form>
       )}
     </div>
-  );
+  )
 }
+

@@ -1,11 +1,11 @@
-import '../styles/NovaOrdemDialog.css';
+import '../styles/NovaOrdemDialog.css'
 
-import { useState, useEffect } from 'react';
-import Select from 'react-select'; 
+import { useState, useEffect } from 'react'
+import Select from 'react-select'
 
 export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
-  const [mostrarForm, setMostrarForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [mostrarForm, setMostrarForm] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     linha_producao_id: null,
     item_entrada: null,
@@ -13,36 +13,36 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
     quantidade_inicial: '',
     executor: '',
     peso_sap: 0
-  });
+  })
 
-  const [operadores, setOperadores] = useState([]);
-  const [loadingOperadores, setLoadingOperadores] = useState(true);
+  const [operadores, setOperadores] = useState([])
+  const [loadingOperadores, setLoadingOperadores] = useState(true)
 
   useEffect(() => {
-      const fetchOperadores = async () => {
-        try {
-          const response = await fetch('/api/operadores');
-          const data = await response.json();
-          if (data.success) {
-            setOperadores(data.data);
-          } else {
-            console.error('Erro ao carregar operadores:', data.error);
-          }
-        } catch (error) {
-          console.error('Erro ao carregar operadores:', error);
-        } finally {
-          setLoadingOperadores(false);
+    const fetchOperadores = async () => {
+      try {
+        const response = await fetch('/api/operadores')
+        const data = await response.json()
+        if (data.success) {
+          setOperadores(data.data)
+        } else {
+          console.error('Erro ao carregar operadores:', data.error)
         }
-      };
-  
-      fetchOperadores();
-    }, []);
+      } catch (error) {
+        console.error('Erro ao carregar operadores:', error)
+      } finally {
+        setLoadingOperadores(false)
+      }
+    }
+
+    fetchOperadores()
+  }, [])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
-    console.log('Enviando dados da nova ordem:', formData);
+    console.log('Enviando dados da nova ordem:', formData)
 
     try {
       const payload = {
@@ -50,23 +50,22 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
         item_entrada: formData.item_entrada?.label || '',
         item_saida: formData.item_saida?.label || '',
         quantidade_inicial: parseFloat(formData.quantidade_inicial) || 0,
-        executor: formData.executor || '',
+        executor: formData.executor || ''
         // peso_sap: 1
-      };
+      }
 
-      console.log('Payload da nova ordem:', payload);
+      console.log('Payload da nova ordem:', payload)
 
       const response = await fetch('/api/ordens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        body: JSON.stringify(payload)
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (data.success) {
-
-        alert(`✅ ${data.message}`);
+        alert(`✅ ${data.message}`)
         setFormData({
           linha_producao_id: null,
           item_entrada: null,
@@ -74,111 +73,116 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
           quantidade_inicial: '',
           executor: '',
           peso_sap: 0
-        });
-        setMostrarForm(false);
-        onOrdemCriada();
+        })
+        setMostrarForm(false)
+        onOrdemCriada()
       } else {
-        console.log('Erro ao criar ordem:', data);
-        alert('❌ Erro: ' + data.error);
+        console.log('Erro ao criar ordem:', data)
+        alert('❌ Erro: ' + data.error)
       }
     } catch (error) {
-      alert('❌ Erro de conexão: ' + error.message);
+      alert('❌ Erro de conexão: ' + error.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const [produtosEntrada, setProdutosEntrada] = useState([]);
-  const [produtosSaida, setProdutosSaida] = useState([]);
-  const [error, setError] = useState(null);
+  const [produtosEntrada, setProdutosEntrada] = useState([])
+  const [produtosSaida, setProdutosSaida] = useState([])
+  const [error, setError] = useState(null)
 
   const carregarProdutosEntrada = () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     fetch('/api/sap/produtos-entrada')
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-          setProdutosEntrada(data.data);
+          setProdutosEntrada(data.data)
         } else {
-          setError('SAP temporariamente indisponível');
-          setProdutosEntrada([]);
+          setError('SAP temporariamente indisponível')
+          setProdutosEntrada([])
         }
       })
       .catch(() => {
-        setError('SAP offline - dados indisponíveis');
-        setProdutosEntrada([]);
+        setError('SAP offline - dados indisponíveis')
+        setProdutosEntrada([])
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
   const carregarProdutosSaida = () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     fetch('/api/sap/produtos-saida')
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-          setProdutosSaida(data.data);
+          setProdutosSaida(data.data)
         } else {
-          setError('SAP temporariamente indisponível');
-          setProdutosSaida([]);
+          setError('SAP temporariamente indisponível')
+          setProdutosSaida([])
         }
       })
       .catch(() => {
-        setError('SAP offline - dados indisponíveis');
-        setProdutosSaida([]);
+        setError('SAP offline - dados indisponíveis')
+        setProdutosSaida([])
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    carregarProdutosEntrada();
-    carregarProdutosSaida();
-  }, []);
+    carregarProdutosEntrada()
+    carregarProdutosSaida()
+  }, [])
 
   const formatarOpcoes = (produtos) =>
-    produtos.map(p => ({
+    produtos.map((p) => ({
       value: p.codigo || p.id,
       label: `${p.codigo ? `[${p.codigo}] ` : ''}${p.nome}`
-    }));
+    }))
 
   const formatarLinhas = (linhas) =>
-    linhas.map(linha => ({
+    linhas.map((linha) => ({
       value: linha.id,
       label: linha.nome
-    }));
+    }))
 
-    // Adiciona peso à quantidade_inicial
-    const handleAddPeso = (valor) => {
-        const pesoAtual = parseFloat(formData.quantidade_inicial) || 0;
-        const novoPeso = (pesoAtual + valor).toFixed(1);
-        setFormData({ ...formData, quantidade_inicial: novoPeso });
-    };
+  // Adiciona peso à quantidade_inicial
+  const handleAddPeso = (valor) => {
+    const pesoAtual = parseFloat(formData.quantidade_inicial) || 0
+    const novoPeso = (pesoAtual + valor).toFixed(1)
+    setFormData({ ...formData, quantidade_inicial: novoPeso })
+  }
 
-    // Limpa a quantidade_inicial
-    const handleClearPeso = () => {
-        setFormData({ ...formData, quantidade_inicial: '' });
-    };
+  // Limpa a quantidade_inicial
+  const handleClearPeso = () => {
+    setFormData({ ...formData, quantidade_inicial: '' })
+  }
 
-    const customStyles = {
-        option: (provided, state) => ({
-            ...provided,
-            color: '#171680',
-            backgroundColor: state.isFocused ? '#eee' : 'white',
-            display: 'flex',
-        }),
-        singleValue: (provided) => ({
-            ...provided,
-            color: '#171680',
-        }),
-        placeholder: (provided) => ({
-            ...provided,
-            display: 'flex'
-        })
-    };
+  const customStyles = {
+    option: (provided, state) => ({
+      ...provided,
+      color: '#171680',
+      backgroundColor: state.isFocused ? '#eee' : 'white',
+      display: 'flex'
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      color: '#171680',
+      display: 'flex',
+      justifyContent: 'flex-start',
+      textAlign: 'left'
+    }),
+    placeholder: (provided) => ({
+      ...provided,
+      display: 'flex',
+      justifyContent: 'flex-start',
+      textAlign: 'left'
+    })
+  }
 
   return (
     <div className="secao">
@@ -203,7 +207,9 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
                 <Select
                   options={formatarLinhas(linhas)}
                   value={formData.linha_producao_id}
-                  onChange={(selected) => setFormData({ ...formData, linha_producao_id: selected })}
+                  onChange={(selected) =>
+                    setFormData({ ...formData, linha_producao_id: selected })
+                  }
                   placeholder="Selecione a linha"
                   isClearable
                   noOptionsMessage={() => 'Nenhuma linha encontrada'}
@@ -217,16 +223,18 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
                 <Select
                   options={formatarOpcoes(produtosEntrada)}
                   value={formData.item_entrada}
-                  onChange={(selected) => setFormData({ ...formData, item_entrada: selected })}
+                  onChange={(selected) =>
+                    setFormData({ ...formData, item_entrada: selected })
+                  }
                   placeholder="Digite código ou nome do produto"
                   isClearable
                   noOptionsMessage={() => 'Nenhum produto encontrado'}
                   filterOption={(option, inputValue) => {
-                    const input = inputValue.toLowerCase();
+                    const input = inputValue.toLowerCase()
                     return (
                       option.label.toLowerCase().includes(input) ||
                       option.value.toString().toLowerCase().includes(input)
-                    );
+                    )
                   }}
                   styles={customStyles}
                 />
@@ -238,16 +246,18 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
                 <Select
                   options={formatarOpcoes(produtosSaida)}
                   value={formData.item_saida}
-                  onChange={(selected) => setFormData({ ...formData, item_saida: selected })}
+                  onChange={(selected) =>
+                    setFormData({ ...formData, item_saida: selected })
+                  }
                   placeholder="Digite código ou nome do produto"
                   isClearable
                   noOptionsMessage={() => 'Nenhum produto encontrado'}
                   filterOption={(option, inputValue) => {
-                    const input = inputValue.toLowerCase();
+                    const input = inputValue.toLowerCase()
                     return (
                       option.label.toLowerCase().includes(input) ||
                       option.value.toString().toLowerCase().includes(input)
-                    );
+                    )
                   }}
                   styles={customStyles}
                 />
@@ -255,13 +265,16 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
 
               {/* Quantidade Inicial */}
               <div className="form-grupo">
-                <label>Quantidade Inicial:</label>
+                <label>Quantidade MP Planejada:</label>
                 <input
                   type="number"
                   name="quantidade_inicial"
                   value={formData.quantidade_inicial}
                   onChange={(e) =>
-                    setFormData({ ...formData, quantidade_inicial: e.target.value })
+                    setFormData({
+                      ...formData,
+                      quantidade_inicial: e.target.value
+                    })
                   }
                   placeholder="0.000"
                   step="0.001"
@@ -270,98 +283,94 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
               </div>
 
               {/* BOTÕES DE PESO */}
-                <div className="botoes-peso" style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    {[5, 10, 20].map((valor) => (
-                        <button
-                        type="button"
-                        key={valor}
-                        onClick={() => handleAddPeso(valor)}
-                        style={{
-                            flex: '1',
-                            padding: '10px',
-                            fontSize: '1rem',
-                            background: '#1A4E9A',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                        }}
-                        >
-                        +{valor}
-                        </button>
-                    ))}
-                    
-                    <button 
-                      className="botoes-peso" 
-                      style={{
-                            flex: '1',
-                            padding: '10px',
-                            fontSize: '1rem',
-                            background: '#1A4E9A',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                        }}
-                      >
-                      Ok
-                    </button>
+              <div
+                className="botoes-peso"
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  marginTop: '8px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                {[5, 10, 20].map((valor) => (
+                  <button
+                    type="button"
+                    key={valor}
+                    onClick={() => handleAddPeso(valor)}
+                    style={{
+                      flex: '1',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      background: '#1A4E9A',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    +{valor}
+                  </button>
+                ))}
 
-                    <button
-                        type="button"
-                        onClick={handleClearPeso}
-                        style={{
-                        flex: '1',
-                        padding: '10px',
-                        fontSize: '1rem',
-                        background: '#dc3545',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer'
-                        }}
-                    >
-                        Limpar
-                    </button>
-            </div>
+                {/* <button */}
+                {/*   className="botoes-peso" */}
+                {/*   style={{ */}
+                {/*     flex: '1', */}
+                {/*     padding: '10px', */}
+                {/*     fontSize: '1rem', */}
+                {/*     background: '#1A4E9A', */}
+                {/*     color: '#fff', */}
+                {/*     border: 'none', */}
+                {/*     borderRadius: '6px', */}
+                {/*     cursor: 'pointer' */}
+                {/*   }} */}
+                {/* > */}
+                {/*   Ok */}
+                {/* </button> */}
+
+                <button
+                  type="button"
+                  onClick={handleClearPeso}
+                  style={{
+                    flex: '1',
+                    padding: '10px',
+                    fontSize: '1rem',
+                    background: '#dc3545',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Limpar
+                </button>
+              </div>
 
               {loadingOperadores ? (
-                  <p>⏳ Carregando operadores...</p>
-                ) : (
-                  <div className="form-grupo">
-                    <label>Enviado para:</label>
-                    <Select
-                      options={formatarOpcoes(operadores)}
-                      value={formData.criado_por}
-                      onChange={(selected) => setFormData({ ...formData, criado_por: selected })}
-                      placeholder="Digite código ou nome do operador"
-                      isClearable
-                      noOptionsMessage={() => 'Nenhum operador encontrado'}
-                      filterOption={(option, inputValue) => {
-                        const input = inputValue.toLowerCase();
-                        return (
-                          option.label.toLowerCase().includes(input) ||
-                          option.value.toString().toLowerCase().includes(input)
-                        );
-                      }}
-                      styles={customStyles}
-                    />
-                  </div>
-                  // <select
-                  //   className='input-form-nova-subetapa-tablet'
-                  //   value={formData.criado_por}
-                  //   onChange={(e) => setFormData({...formData, criado_por: e.target.value})}
-                  //   required
-                  // >
-                  //   <option value="">Selecione Operador</option>
-                  //   {operadores.map(op => (
-                  //     <option key={op.id} value={op.nome}>
-                  //       {op.nome} (Mat: {op.matricula})
-                  //     </option>
-                  //   ))}
-                  // </select>
-                )
-              }
+                <p>⏳ Carregando operadores...</p>
+              ) : (
+                <div className="form-grupo">
+                  <label>Enviado para:</label>
+                  <Select
+                    options={formatarOpcoes(operadores)}
+                    value={formData.criado_por}
+                    onChange={(selected) =>
+                      setFormData({ ...formData, criado_por: selected })
+                    }
+                    placeholder="Digite código ou nome do operador"
+                    isClearable
+                    noOptionsMessage={() => 'Nenhum operador encontrado'}
+                    filterOption={(option, inputValue) => {
+                      const input = inputValue.toLowerCase()
+                      return (
+                        option.label.toLowerCase().includes(input) ||
+                        option.value.toString().toLowerCase().includes(input)
+                      )
+                    }}
+                    styles={customStyles}
+                  />
+                </div>
+              )}
 
               {/* Botões */}
               <div className="form-acoes">
@@ -385,5 +394,5 @@ export function NovaOrdemDialog({ onOrdemCriada, linhas }) {
         </div>
       )}
     </div>
-  );
+  )
 }

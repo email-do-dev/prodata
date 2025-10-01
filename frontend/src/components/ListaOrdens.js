@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
 export function ListaOrdens({ atualizar }) {
-    const [ordens, setOrdens] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [ordens, setOrdens] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const carregarOrdens = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await fetch('/api/ordens');
-      const data = await response.json();
+      const response = await fetch('/api/ordens')
+      const data = await response.json()
 
       if (data.success) {
-        setOrdens(data.data);
-        setError(null);
+        setOrdens(data.data)
+        setError(null)
       } else {
-        setError(data.error);
+        setError(data.error)
       }
     } catch (err) {
-      setError('Erro ao carregar ordens: ' + err.message);
+      setError('Erro ao carregar ordens: ' + err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const alterarStatus = async (id, novoStatus) => {
     try {
@@ -30,46 +30,53 @@ export function ListaOrdens({ atualizar }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: novoStatus })
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.success) {
-        carregarOrdens(); // Atualiza lista após mudança
+        carregarOrdens() // Atualiza lista após mudança
       } else {
-        alert('Erro: ' + data.error);
+        alert('Erro: ' + data.error)
       }
     } catch (error) {
-      alert('Erro: ' + error.message);
+      alert('Erro: ' + error.message)
     }
-  };
+  }
 
   const deletarOrdem = async (id, codigo) => {
-    const confirmacao = window.confirm(`Tem certeza que deseja deletar a ordem ${codigo}?`);
-    if (!confirmacao) return;
+    const confirmacao = window.confirm(
+      `Tem certeza que deseja deletar a ordem ${codigo}?`
+    )
+    if (!confirmacao) return
 
     try {
       const response = await fetch(`/api/ordens/${id}`, {
         method: 'DELETE'
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.success) {
-        alert('✅ Ordem deletada com sucesso!');
-        carregarOrdens();
+        alert('✅ Ordem deletada com sucesso!')
+        carregarOrdens()
       } else {
-        alert('❌ Erro: ' + data.error);
+        alert('❌ Erro: ' + data.error)
       }
     } catch (error) {
-      alert('❌ Erro: ' + error.message);
+      alert('❌ Erro: ' + error.message)
     }
-  };
+  }
 
   useEffect(() => {
-    carregarOrdens();
-  }, [atualizar]); // Recarrega sempre que atualizar mudar
+    carregarOrdens()
+  }, [atualizar]) // Recarrega sempre que atualizar mudar
 
-  if (loading) return <div className="loading">⏳ Carregando ordens...</div>;
-  if (error) return <div className="error">❌ {error}</div>;
+  function formatDate(dateString) {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('pt-BR') // retorna DD/MM/YYYY
+  }
+
+  if (loading) return <div className="loading">⏳ Carregando ordens...</div>
+  if (error) return <div className="error">❌ {error}</div>
 
   return (
     <div className="secao">
@@ -95,37 +102,42 @@ export function ListaOrdens({ atualizar }) {
             </tr>
           </thead>
           <tbody>
-            {ordens.map(ordem => (
+            {ordens.map((ordem) => (
               <tr key={ordem.id}>
-                <td><code>{ordem.codigo}</code></td>
+                <td>
+                  <code>{ordem.codigo}</code>
+                </td>
                 <td>{ordem.linha_nome}</td>
                 <td>{ordem.item_entrada}</td>
                 <td>{ordem.item_saida}</td>
-                <td>{ordem.quantidade_inicial ? Number(ordem.quantidade_inicial).toFixed(1) : '0.0'}</td>
                 <td>
-                  <select 
-                    value={ordem.status} 
+                  {ordem.quantidade_inicial
+                    ? Number(ordem.quantidade_inicial).toFixed(1)
+                    : '0.0'}
+                </td>
+                <td>
+                  <div
+                    value={ordem.status}
                     onChange={(e) => alterarStatus(ordem.id, e.target.value)}
                     className={`status-select status-${ordem.status.toLowerCase()}`}
                   >
-                    <option value="ABERTA">🟢 ABERTA</option>
-                    <option value="EM_ANDAMENTO">🟡 EM ANDAMENTO</option>
-                    <option value="FECHADA">🔵 FECHADA</option>
-                    <option value="CANCELADA">🔴 CANCELADA</option>
-                  </select>
+                    {ordem.status}
+                  </div>
                 </td>
-                <td>{Math.floor(ordem.horas_desde_criacao)}h</td>
                 <td>
-                   <button 
+                  <strong>Criada em:</strong> {formatDate(ordem.data_criacao)}
+                </td>
+                <td>
+                  <button
                     onClick={() => window.verDetalhes(ordem.id)}
                     className="botao-detalhes"
                     title="Ver detalhes"
                   >
                     🔍
                   </button>
-                                    
+
                   {ordem.status === 'ABERTA' && (
-                    <button 
+                    <button
                       onClick={() => deletarOrdem(ordem.id, ordem.codigo)}
                       className="botao-deletar"
                       title="Deletar ordem"
@@ -140,5 +152,5 @@ export function ListaOrdens({ atualizar }) {
         </table>
       </div>
     </div>
-  );
+  )
 }

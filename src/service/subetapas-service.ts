@@ -30,7 +30,6 @@ export class SubetapasService {
       GROUP BY s.id
       ORDER BY s.numero_etapa
     `
-
     const result = await client.query(query, [ordemId])
     return result.rows
   }
@@ -38,11 +37,25 @@ export class SubetapasService {
   async criarSubetapa(ordemId: number, data: any) {
     const client = await this.getClient()
 
-    const { numero_etapa, descricao, item_codigo, criado_por } = data
+    const { descricao, item_codigo, criado_por } = data
 
-    if (!numero_etapa || !item_codigo) {
-      throw new Error('Campos obrigatórios: numero_etapa, item_codigo')
+    if (!item_codigo) {
+      throw new Error('Campo obrigatório: item_codigo')
     }
+
+    // 🔎 Buscar última subetapa criada pelo usuário (ignorando a 99)
+    const ultimaEtapaResult = await client.query(
+      `
+        SELECT COALESCE(MAX(numero_etapa), 0) as ultima_etapa
+        FROM subetapa
+        WHERE ordem_producao_id = $1
+          AND numero_etapa <> 99
+      `,
+      [ordemId]
+    )
+
+    const ultimaEtapa = ultimaEtapaResult.rows[0]?.ultima_etapa || 0
+    const proximaEtapa = ultimaEtapa + 1
 
     const isSistema = !criado_por || criado_por.toLowerCase() === 'sistema'
     const ativa = !isSistema
@@ -61,31 +74,30 @@ export class SubetapasService {
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `
-
     const values = [
       ordemId,
-      parseInt(numero_etapa),
-      descricao || `Etapa ${numero_etapa}`,
+      proximaEtapa,
+      descricao || `Etapa ${proximaEtapa}`,
       item_codigo,
       criado_por || 'Sistema',
       ativa,
-      data_ativacao,
+      data_ativacao
     ]
 
     const result = await client.query(query, values)
     const subetapaCriada = result.rows[0]
 
+    // Atualizar quantidade de subetapas na linha de produção
     const ordemResult = await client.query(
       `SELECT linha_producao_id FROM ordem_producao WHERE id = $1`,
-      [ordemId],
+      [ordemId]
     )
 
     const linhaProducaoId = ordemResult.rows[0]?.linha_producao_id
-
     if (linhaProducaoId) {
       await client.query(
         `UPDATE linha_producao SET num_subetapas = num_subetapas + 1 WHERE id = $1`,
-        [linhaProducaoId],
+        [linhaProducaoId]
       )
     }
 
@@ -108,7 +120,6 @@ export class SubetapasService {
       WHERE r.subetapa_id = $1
       ORDER BY r.data_registro DESC
     `
-
     const result = await client.query(query, [subetapaId])
     return result.rows
   }
@@ -122,7 +133,7 @@ export class SubetapasService {
       tipo_medida,
       executor,
       estacao,
-      peso_kg,
+      peso_kg
     } = data
 
     if (!operador || !peso_kg) {
@@ -140,7 +151,6 @@ export class SubetapasService {
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `
-
     const values = [
       subetapaId,
       operador.toUpperCase(),
@@ -148,7 +158,7 @@ export class SubetapasService {
       quantidade_unidades ? parseInt(quantidade_unidades) : 1,
       tipo_medida || 'KG',
       executor || '',
-      estacao || 'WEB',
+      estacao || 'WEB'
     ]
 
     const result = await client.query(query, values)
@@ -163,7 +173,6 @@ export class SubetapasService {
       FROM posicao_linha
       ORDER BY descricao ASC
     `
-
     const result = await client.query(query)
     return result.rows
   }
@@ -202,7 +211,6 @@ export class SubetapasService {
       )
       SELECT * FROM rendimentos
     `
-
     const result = await client.query(query, [ordemId])
     return result.rows
   }
@@ -210,45 +218,89 @@ export class SubetapasService {
   async ativarSubetapa(
     subetapaId: number,
     ativa: boolean,
-    data_ativacao: string,
+    data_ativacao: string
   ) {
     const client = await this.getClient()
 
     const query = `
-    UPDATE subetapa
-    SET
-      ativa = $1,
-      data_ativacao = $2
-    WHERE id = $3
-    RETURNING *
-  `
+      UPDATE subetapa
+      SET
+        ativa = $1,
+        data_ativacao = $2
+      WHERE id = $3
+      RETURNING *
+    `
     const values = [ativa, data_ativacao, subetapaId]
-
     const result = await client.query(query, values)
+    const subetapa = result.rows[0]
 
-    return result.rows[0]
+    if (!subetapa) {
+      throw new Error('Subetapa não encontrada')
+    }
+
+    // 🔹 Regra 1: primeira subetapa ativada -> ordem vai para EM_ANDAMENTO
+    if (subetapa.numero_etapa === 1 && ativa) {
+      await client.query(
+        `
+          UPDATE ordem_producao
+          SET status = 'EM_ANDAMENTO'
+          WHERE id = $1
+        `,
+        [subetapa.ordem_producao_id]
+      )
+    }
+
+    return subetapa
   }
 
   async concluirSubetapa(
     subetapaId: number,
     ativa: boolean,
-    data_conclusao: string,
+    data_conclusao: string
   ) {
     const client = await this.getClient()
 
     const query = `
-    UPDATE subetapa
-    SET
-      ativa = $1,
-      data_conclusao = $2
-    WHERE id = $3
-    RETURNING *
-  `
+      UPDATE subetapa
+      SET
+        ativa = $1,
+        data_conclusao = $2
+      WHERE id = $3
+      RETURNING *
+    `
     const values = [ativa, data_conclusao, subetapaId]
-
     const result = await client.query(query, values)
+    const subetapa = result.rows[0]
 
-    return result.rows[0]
+    if (!subetapa) {
+      throw new Error('Subetapa não encontrada')
+    }
+
+    // 🔹 Regra 2: se subetapa 99 for concluída e não houver mais nenhuma ativa -> FECHADA
+    if (subetapa.numero_etapa === 99 && !ativa) {
+      const checkQuery = `
+        SELECT COUNT(*) as ativas
+        FROM subetapa
+        WHERE ordem_producao_id = $1 AND ativa = true
+      `
+      const checkResult = await client.query(checkQuery, [
+        subetapa.ordem_producao_id
+      ])
+      const ativas = parseInt(checkResult.rows[0].ativas, 10)
+
+      if (ativas === 0) {
+        await client.query(
+          `
+            UPDATE ordem_producao
+            SET status = 'FECHADA', data_fim = NOW()
+            WHERE id = $1
+          `,
+          [subetapa.ordem_producao_id]
+        )
+      }
+    }
+
+    return subetapa
   }
 
   async closeConnection() {
@@ -267,8 +319,23 @@ export class SubetapasService {
       WHERE subetapa_id = $1
       ORDER BY created_at DESC
     `
-
     const result = await client.query(query, [subetapaId])
     return result.rows
+  }
+
+  async deletarPeso(pesoId: number) {
+    const client = await this.getClient()
+
+    const query = `
+      DELETE FROM registro_peso
+      WHERE id = $1
+      RETURNING *
+    `
+    const result = await client.query(query, [pesoId])
+    if (result.rowCount === 0) {
+      throw new Error(`Registro de peso com id ${pesoId} não encontrado`)
+    }
+
+    return result.rows[0] // retorna o registro deletado
   }
 }
