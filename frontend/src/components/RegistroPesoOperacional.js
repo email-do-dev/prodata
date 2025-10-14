@@ -10,7 +10,8 @@ export function RegistroPesoOperacional({
     operador_id: '',
     quantidade_unidades: '',
     executor_id: '',
-    estacao: 'TABLET'
+    estacao: 'TABLET',
+    posicao: 0
   })
 
   const [subtotal, setSubtotal] = useState(0)
@@ -102,7 +103,8 @@ export function RegistroPesoOperacional({
       peso_kg: pesoFinal,
       quantidade_unidades: pesoFinal,
       executor: formData.executor,
-      estacao: formData.estacao
+      estacao: formData.estacao,
+      posicao: formData.posicao
     }
 
     if (offline) {
@@ -309,9 +311,12 @@ export function RegistroPesoOperacional({
               <p>⏳ Carregando posições de linha...</p>
             ) : (
               <select
-                value={formData.executor_id}
+                value={formData.posicao}
                 onChange={(e) =>
-                  setFormData({ ...formData, executor_id: e.target.value })
+                  setFormData({
+                    ...formData,
+                    posicao: parseInt(e.target.value)
+                  })
                 }
                 required
               >

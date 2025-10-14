@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
 export function RegistroPeso({ subetapaId, onPesoRegistrado, onCancelar }) {
   const [formData, setFormData] = useState({
@@ -7,64 +7,63 @@ export function RegistroPeso({ subetapaId, onPesoRegistrado, onCancelar }) {
     quantidade_unidades: '',
     tipo_medida: 'KG',
     executor: '',
+    observacoes: '',
     estacao: 'WEB'
-  });
+  })
 
-  const [operadores, setOperadores] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingOperadores, setLoadingOperadores] = useState(true);
+  const [operadores, setOperadores] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadingOperadores, setLoadingOperadores] = useState(true)
 
   // Carregar operadores
   useEffect(() => {
     const fetchOperadores = async () => {
       try {
-        const response = await fetch('/api/operadores');
-        const data = await response.json();
+        const response = await fetch('/api/operadores')
+        const data = await response.json()
         if (data.success) {
-          setOperadores(data.data);
+          setOperadores(data.data)
         }
       } catch (error) {
-        console.error('Erro ao buscar operadores:', error);
+        console.error('Erro ao buscar operadores:', error)
       } finally {
-        setLoadingOperadores(false);
+        setLoadingOperadores(false)
       }
-    };
-    fetchOperadores();
-  }, []);
+    }
+    fetchOperadores()
+  }, [])
 
   // Função para adicionar peso com base no botão clicado
   const handleAddPeso = (valor) => {
-    const pesoAtual = parseFloat(formData.peso_kg) || 0;
-    const novoPeso = (pesoAtual + valor).toFixed(3);
-    setFormData({ ...formData, peso_kg: novoPeso });
-  };
+    const pesoAtual = parseFloat(formData.peso_kg) || 0
+    const novoPeso = (pesoAtual + valor).toFixed(3)
+    setFormData({ ...formData, peso_kg: novoPeso })
+  }
 
   // Função para limpar peso
   const handleClearPeso = () => {
-    setFormData({ ...formData, peso_kg: '' });
-  };
+    setFormData({ ...formData, peso_kg: '' })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!formData.operador_id) {
-      alert('Selecione um operador!');
-      return;
+      alert('Selecione um operador!')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
       const operadorSelecionado = operadores.find(
         (op) => op.id === parseInt(formData.operador_id)
-      );
+      )
 
       if (!operadorSelecionado) {
-        alert('Operador inválido!');
-        setLoading(false);
-        return;
+        alert('Operador inválido!')
+        setLoading(false)
+        return
       }
-
-      
 
       const payload = {
         operador: operadorSelecionado.nome,
@@ -72,35 +71,34 @@ export function RegistroPeso({ subetapaId, onPesoRegistrado, onCancelar }) {
         quantidade_unidades: formData.quantidade_unidades,
         tipo_medida: formData.tipo_medida,
         observacoes: formData.observacoes,
-        estacao: formData.estacao,
-      };
+        estacao: formData.estacao
+      }
 
       const response = await fetch(`/api/subetapas/${subetapaId}/pesos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        body: JSON.stringify(payload)
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.success) {
-        alert('✅ Peso registrado com sucesso!');
-        onPesoRegistrado();
+        alert('✅ Peso registrado com sucesso!')
+        onPesoRegistrado()
       } else {
-        alert('❌ Erro: ' + data.error);
+        alert('❌ Erro: ' + data.error)
       }
     } catch (error) {
-      alert('❌ Erro: ' + error.message);
+      alert('❌ Erro: ' + error.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="registro-peso-modal">
       <div className="modal-content">
         <h3>⚖️ Registrar Peso</h3>
         <form onSubmit={handleSubmit} className="formulario">
-          
           {/* SELECT DE OPERADORES */}
           <div className="form-grupo">
             <label>Operador:</label>
@@ -141,7 +139,15 @@ export function RegistroPeso({ subetapaId, onPesoRegistrado, onCancelar }) {
             />
 
             {/* BOTÕES DE PESO */}
-            <div className="botoes-peso" style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+            <div
+              className="botoes-peso"
+              style={{
+                display: 'flex',
+                gap: '8px',
+                marginTop: '8px',
+                flexWrap: 'wrap'
+              }}
+            >
               {[10, 20, 30, 40].map((valor) => (
                 <button
                   type="button"
@@ -209,5 +215,6 @@ export function RegistroPeso({ subetapaId, onPesoRegistrado, onCancelar }) {
         </form>
       </div>
     </div>
-  );
+  )
 }
+

@@ -108,18 +108,29 @@ export class SubetapasService {
     const client = await this.getClient()
 
     const query = `
-      SELECT
-        r.*,
-        s.numero_etapa,
-        s.item_codigo,
-        s.descricao as etapa_descricao,
-        o.codigo as ordem_codigo
-      FROM registro_peso r
-      JOIN subetapa s ON r.subetapa_id = s.id
-      JOIN ordem_producao o ON s.ordem_producao_id = o.id
-      WHERE r.subetapa_id = $1
-      ORDER BY r.data_registro DESC
-    `
+    SELECT
+      r.id,
+      r.subetapa_id,
+      r.data_registro,
+      r.operador,
+      r.peso_kg,
+      r.quantidade_unidades,
+      r.tipo_medida,
+      r.observacoes,
+      r.estacao,
+      r.executor,
+      r.posicao,
+      s.numero_etapa,
+      s.item_codigo,
+      s.descricao AS etapa_descricao,
+      o.codigo AS ordem_codigo
+    FROM registro_peso r
+    JOIN subetapa s ON r.subetapa_id = s.id
+    JOIN ordem_producao o ON s.ordem_producao_id = o.id
+    WHERE r.subetapa_id = $1
+    ORDER BY r.data_registro DESC
+  `
+
     const result = await client.query(query, [subetapaId])
     return result.rows
   }
@@ -131,9 +142,9 @@ export class SubetapasService {
       operador,
       quantidade_unidades,
       tipo_medida,
-      executor,
       estacao,
-      peso_kg
+      peso_kg,
+      posicao
     } = data
 
     if (!operador || !peso_kg) {
@@ -147,7 +158,7 @@ export class SubetapasService {
 
     const query = `
       INSERT INTO registro_peso
-      (subetapa_id, operador, peso_kg, quantidade_unidades, tipo_medida, executor, estacao)
+      (subetapa_id, operador, peso_kg, quantidade_unidades, tipo_medida, estacao, posicao)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `
@@ -157,8 +168,8 @@ export class SubetapasService {
       peso,
       quantidade_unidades ? parseInt(quantidade_unidades) : 1,
       tipo_medida || 'KG',
-      executor || '',
-      estacao || 'WEB'
+      estacao || 'WEB',
+      posicao
     ]
 
     const result = await client.query(query, values)
