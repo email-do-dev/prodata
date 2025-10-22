@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 export function RegistroPesoOperacional({
   subetapa,
@@ -274,33 +274,36 @@ export function RegistroPesoOperacional({
               pesosRegistrados
                 .slice()
                 .reverse()
-                .map((peso, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '4px 0',
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <span>{peso.toFixed(3)} kg</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePeso(index)}
+                .map((peso, index) => {
+                  const originalIndex = pesosRegistrados.length - 1 - index
+                  return (
+                    <div
+                      key={originalIndex}
                       style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#dc3545',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '4px 0',
+                        borderBottom: '1px solid #eee'
                       }}
                     >
-                      ✖
-                    </button>
-                  </div>
-                ))
+                      <span>{peso.toFixed(3)} kg</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePeso(originalIndex)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#dc3545',
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ✖
+                      </button>
+                    </div>
+                  )
+                })
             )}
           </div>
 

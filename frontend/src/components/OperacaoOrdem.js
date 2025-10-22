@@ -112,6 +112,14 @@ export function OperacaoOrdem({
     }
   }
 
+  async function editarPeso(pesoId, novoPeso) {
+    await fetch(`/api/subetapas/pesos/${pesoId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ peso_kg: novoPeso })
+    })
+  }
+
   const registrarPesoOffline = (peso) => {
     const novoPeso = {
       ...peso,
@@ -177,6 +185,38 @@ export function OperacaoOrdem({
     carregarDados()
   }, [ordem.id])
 
+  function formatTitle(text) {
+    if (!text) return ''
+
+    // Substitui underscores por espaço e normaliza
+    const normalized = text.replace(/_/g, ' ').toLowerCase().trim()
+
+    const words = normalized.split(/\s+/)
+
+    const result = words.map((word, i) => {
+      // Primeira palavra sempre com inicial maiúscula
+      if (i === 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      }
+
+      // Mantém "de", "da", "do" em minúsculo
+      if (['de', 'da', 'do'].includes(word)) {
+        return word
+      }
+
+      // Capitaliza palavra que vem depois de "de", "da" ou "do"
+      const prev = words[i - 1]
+      if (['de', 'da', 'do'].includes(prev)) {
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      }
+
+      // Caso normal: inicial maiúscula
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
+
+    return result.join(' ')
+  }
+
   return (
     <div className="operacao-ordem">
       {/* Header com info da ordem */}
@@ -227,9 +267,12 @@ export function OperacaoOrdem({
             {currentSubetapa.length > 0 ? (
               currentSubetapa.map((subetapa) => (
                 <div key={subetapa.id} className="etapa-card-op">
-                  <div className="etapa-numero">{subetapa.numero_etapa}</div>
+                  <div className="etapa-numero">
+                    {formatTitle(subetapa.descricao)}
+                  </div>
                   <div className="etapa-info">
                     <h4>{subetapa.item_codigo}</h4>
+                    <h4>Etapa: {subetapa.numero_etapa}</h4>
                     <p className="peso-atual">
                       {Number(subetapa.peso_total).toFixed(1)} kg
                     </p>
@@ -313,6 +356,7 @@ export function OperacaoOrdem({
           setIsListPesosOpen={setIsListPesosOpen}
           subetapaPesos={subetapaPesos}
           onPesoRemovido={removerPesoSubetapa}
+          onEditarPeso={editarPeso}
         />
       )}
 

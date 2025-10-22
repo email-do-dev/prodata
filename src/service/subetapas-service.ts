@@ -349,4 +349,35 @@ export class SubetapasService {
 
     return result.rows[0] // retorna o registro deletado
   }
+
+  async editarPeso(pesoId: number, novoPeso: number) {
+    const client = await this.getClient()
+
+    if (!pesoId) {
+      throw new Error('ID do peso é obrigatório')
+    }
+
+    if (novoPeso === undefined || novoPeso === null) {
+      throw new Error('O campo peso_kg é obrigatório')
+    }
+
+    const peso = parseFloat(novoPeso as unknown as string)
+    if (isNaN(peso) || peso < 0) {
+      throw new Error('Peso deve ser um número maior que zero')
+    }
+
+    const query = `
+    UPDATE registro_peso
+    SET peso_kg = $1, data_registro = NOW()
+    WHERE id = $2
+    RETURNING *
+  `
+    const result = await client.query(query, [peso, pesoId])
+
+    if (result.rowCount === 0) {
+      throw new Error(`Registro de peso com id ${pesoId} não encontrado`)
+    }
+
+    return result.rows[0]
+  }
 }
