@@ -354,6 +354,45 @@ app.delete('/api/subetapas/pesos/:pesoId', async (req, res) => {
   }
 })
 
+// Editar peso da listagem
+app.put('/api/subetapas/pesos/:pesoId', async (req, res) => {
+  const service = new SubetapasService()
+
+  try {
+    const pesoId = parseInt(req.params.pesoId)
+    const { peso_kg } = req.body
+
+    if (isNaN(pesoId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID do peso inválido'
+      })
+    }
+
+    if (peso_kg === undefined || peso_kg === null) {
+      return res.status(400).json({
+        success: false,
+        error: 'Campo peso_kg é obrigatório'
+      })
+    }
+
+    const data = await service.editarPeso(pesoId, peso_kg)
+
+    res.json({
+      success: true,
+      message: 'Peso atualizado com sucesso',
+      data
+    })
+  } catch (err) {
+    console.error('Erro ao editar peso:', err)
+    res.status(500).json({
+      success: false,
+      error: err.message
+    })
+  } finally {
+    await service.closeConnection()
+  }
+})
 app.get('/api/posicoes', async (req, res) => {
   const service = new SubetapasService()
 
