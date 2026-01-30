@@ -73,6 +73,7 @@ export function DetalhesOrdem({
     }
   }
 
+  console.log(ordem)
   async function handleConcluirSubetapa(subetapa) {
     try {
       const payload = {
@@ -170,6 +171,52 @@ export function DetalhesOrdem({
     }
   }
 
+  function formatTitle(text) {
+    if (!text) return ''
+
+    // Substitui underscores por espaço e normaliza
+    const normalized = text.replace(/_/g, ' ').toLowerCase().trim()
+
+    const words = normalized.split(/\s+/)
+
+    const result = words.map((word, i) => {
+      // Primeira palavra sempre com inicial maiúscula
+      if (i === 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      }
+
+      // Mantém "de", "da", "do" em minúsculo
+      if (['de', 'da', 'do'].includes(word)) {
+        return word
+      }
+
+      // Capitaliza palavra que vem depois de "de", "da" ou "do"
+      const prev = words[i - 1]
+      if (['de', 'da', 'do'].includes(prev)) {
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      }
+
+      // Caso normal: inicial maiúscula
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
+
+    return result.join(' ')
+  }
+
+  function formatarDataHora(dataISO) {
+    const data = new Date(dataISO)
+  
+    return data.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }) + ' às ' + data.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  
+
   useEffect(() => {
     carregarDados()
   }, [ordemId])
@@ -205,9 +252,8 @@ export function DetalhesOrdem({
             <p>
               <strong>Item Saída:</strong> {ordem.item_saida}
             </p>
-            <p>
-              <strong>Criada há:</strong>{' '}
-              {Math.floor(ordem.horas_desde_criacao)}h
+            <p className="text-sm text-muted-foreground">
+              Criado em {formatarDataHora(ordem.data_criacao)}
             </p>
           </div>
         </div>
@@ -246,7 +292,7 @@ export function DetalhesOrdem({
               return (
                 <div key={subetapa.id} className="subetapa-card">
                   <div className="subetapa-header">
-                    <h3>📍 Etapa {subetapa.numero_etapa}</h3>
+                    <h3>{formatTitle(subetapa.descricao)}</h3>
                     <span className="peso-badge">
                       {Number(subetapa.peso_total).toFixed(1)} kg
                     </span>
