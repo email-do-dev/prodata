@@ -258,7 +258,8 @@ export function RegistroPesoOperacional({
           <div
             style={{
               marginTop: '8px',
-              maxHeight: '400px',
+              height: '50px',
+              maxHeight: '80px',
               overflowY: 'auto',
               border: '1px solid #ccc',
               borderRadius: '6px',

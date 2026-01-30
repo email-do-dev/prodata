@@ -4,8 +4,8 @@ import express, { Request, Response } from 'express'
 import { SAPService } from './service/sap-service'
 
 import { connectDB, getLinhasProducao } from './database'
-import { OrdensService } from 'service/ordens-service'
-import { SubetapasService } from 'service/subetapas-service'
+import { OrdensService } from './service/ordens-service'
+import { SubetapasService } from './service/subetapas-service'
 
 const app = express()
 const PORT = 3001
@@ -40,12 +40,12 @@ app.get('/api/linhas-producao', async (req: Request, res: Response) => {
     res.json({
       success: true,
       total: linhas.length,
-      data: linhas
+      data: linhas,
     })
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     })
   }
 })
@@ -60,13 +60,13 @@ app.get('/api/sap/produtos-entrada', async (req: Request, res: Response) => {
       success: true,
       total: produtos.length,
       cache_info: 'Dados atualizados a cada 30min',
-      data: produtos
+      data: produtos,
     })
   } catch (error: any) {
     res.status(500).json({
       success: false,
       error: error.message,
-      message: 'Erro ao buscar produtos SAP'
+      message: 'Erro ao buscar produtos SAP',
     })
   }
 })
@@ -81,13 +81,13 @@ app.get('/api/sap/produtos-saida', async (req: Request, res: Response) => {
       success: true,
       total: produtos.length,
       cache_info: 'Dados atualizados a cada 30min',
-      data: produtos
+      data: produtos,
     })
   } catch (error: any) {
     res.status(500).json({
       success: false,
       error: error.message,
-      message: 'Erro ao buscar produtos SAP'
+      message: 'Erro ao buscar produtos SAP',
     })
   }
 })
@@ -113,7 +113,7 @@ app.post('/api/ordens', async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: `Ordem criada com código: ${ordem.codigo} e subetapas geradas`,
-      data: ordem
+      data: ordem,
     })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -126,12 +126,12 @@ app.put('/api/ordens/:id/status', async (req: Request, res: Response) => {
   try {
     const updated = await service.atualizarStatus(
       parseInt(req.params.id),
-      req.body.status
+      req.body.status,
     )
     res.json({
       success: true,
       message: 'Status atualizado com sucesso',
-      data: updated
+      data: updated,
     })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -144,7 +144,7 @@ app.delete('/api/ordens/:id', async (req: Request, res: Response) => {
     const codigo = await service.deletarOrdem(parseInt(req.params.id))
     res.json({
       success: true,
-      message: `Ordem ${codigo} deletada com sucesso`
+      message: `Ordem ${codigo} deletada com sucesso`,
     })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -244,19 +244,19 @@ app.post('/api/ordens/:id/subetapas', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Subetapa criada com sucesso',
-      data
+      data,
     })
   } catch (err: any) {
     console.error('Erro criar subetapa:', err)
     if (err.code === '23505') {
       res.status(400).json({
         success: false,
-        error: 'Etapa já existe para esta ordem'
+        error: 'Etapa já existe para esta ordem',
       })
     } else {
       res.status(500).json({
         success: false,
-        error: err.message
+        error: err.message,
       })
     }
   } finally {
@@ -271,7 +271,7 @@ app.patch('/api/ordens/:id/subetapas/:subetapaId/ativar', async (req, res) => {
     const data = await service.ativarSubetapa(
       parseInt(req.params.subetapaId),
       req.body.ativa,
-      req.body.data_ativacao
+      req.body.data_ativacao,
     )
     res.json({ success: true, message: 'Subetapa ativada com sucesso', data })
   } catch (err: any) {
@@ -291,12 +291,12 @@ app.patch(
       const data = await service.concluirSubetapa(
         parseInt(req.params.subetapaId),
         req.body.ativa,
-        req.body.data_conclusao
+        req.body.data_conclusao,
       )
       res.json({
         success: true,
         message: 'Subetapa concluída com sucesso',
-        data
+        data,
       })
     } catch (err: any) {
       console.error('Erro ao concluir subetapa:', err)
@@ -304,7 +304,7 @@ app.patch(
     } finally {
       await service.closeConnection()
     }
-  }
+  },
 )
 
 // ========== APIS REGISTRO PESO ==========
@@ -332,7 +332,7 @@ app.post('/api/subetapas/:id/pesos', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Peso registrado com sucesso',
-      data
+      data,
     })
   } catch (err: any) {
     console.error('Erro registrar peso:', err)
@@ -365,14 +365,14 @@ app.put('/api/subetapas/pesos/:pesoId', async (req, res) => {
     if (isNaN(pesoId)) {
       return res.status(400).json({
         success: false,
-        error: 'ID do peso inválido'
+        error: 'ID do peso inválido',
       })
     }
 
     if (peso_kg === undefined || peso_kg === null) {
       return res.status(400).json({
         success: false,
-        error: 'Campo peso_kg é obrigatório'
+        error: 'Campo peso_kg é obrigatório',
       })
     }
 
@@ -381,13 +381,13 @@ app.put('/api/subetapas/pesos/:pesoId', async (req, res) => {
     res.json({
       success: true,
       message: 'Peso atualizado com sucesso',
-      data
+      data,
     })
   } catch (err) {
     console.error('Erro ao editar peso:', err)
     res.status(500).json({
       success: false,
-      error: err.message
+      error: err.message,
     })
   } finally {
     await service.closeConnection()
@@ -491,7 +491,7 @@ app.get('/api/dashboard/metricas', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: result.rows[0] || {}
+      data: result.rows[0] || {},
     })
   } catch (error: any) {
     console.error('Erro buscar métricas:', error)
@@ -549,7 +549,7 @@ app.get(
 
       res.json({
         success: true,
-        data: result.rows
+        data: result.rows,
       })
     } catch (error: any) {
       console.error('Erro buscar produção diária:', error)
@@ -557,7 +557,7 @@ app.get(
     } finally {
       if (client) await client.end()
     }
-  }
+  },
 )
 
 // Performance por linha de produção
@@ -602,7 +602,7 @@ app.get(
 
       res.json({
         success: true,
-        data: result.rows
+        data: result.rows,
       })
     } catch (error: any) {
       console.error('Erro buscar performance linhas:', error)
@@ -610,7 +610,7 @@ app.get(
     } finally {
       if (client) await client.end()
     }
-  }
+  },
 )
 
 // Ranking de operadores
@@ -647,7 +647,7 @@ app.get(
 
       res.json({
         success: true,
-        data: result.rows
+        data: result.rows,
       })
     } catch (error: any) {
       console.error('Erro buscar ranking operadores:', error)
@@ -655,7 +655,7 @@ app.get(
     } finally {
       if (client) await client.end()
     }
-  }
+  },
 )
 
 // Iniciar servidor
