@@ -112,6 +112,39 @@ export function OperacaoOrdem({
     }
   }
 
+  async function handleDeletarSubetapa(subetapa) {
+    try {
+      const confirmar = window.confirm(
+        `Tem certeza que deseja excluir a subetapa ${subetapa.numero_etapa}?`
+      )
+  
+      if (!confirmar) return
+  
+      const response = await fetch(
+        `/api/subetapas/${subetapa.id}`,
+        {
+          method: 'DELETE',
+        }
+      )
+  
+      if (!response.ok) throw new Error(`Erro HTTP ${response.status}`)
+  
+      const result = await response.json()
+  
+      if (result.success) {
+        alert('🗑️ Subetapa excluída com sucesso!')
+        await carregarDados()
+        onSubetapaAtualizada?.()
+      } else {
+        alert('❌ Erro: ' + result.error)
+      }
+    } catch (err) {
+      console.error('Erro ao deletar subetapa:', err)
+      alert('❌ Erro: ' + err.message)
+    }
+  }
+  
+
   // async function editarPeso(pesoId, novoPeso) {
   //   await fetch(`/api/subetapas/pesos/${pesoId}`, {
   //     method: 'PUT',
@@ -203,6 +236,8 @@ export function OperacaoOrdem({
   useEffect(() => {
     carregarDados()
   }, [ordem.id])
+
+  // console.log(ordem.id)
 
   function formatTitle(text) {
     if (!text) return ''
@@ -323,32 +358,54 @@ export function OperacaoOrdem({
                           Listar pesos
                         </button>
 
-                        <button
-                          type="submit"
-                          className="botao-confirmar-op"
-                          onClick={() => handleConcluirSubetapa(subetapa)}
-                          disabled={
-                            // Regra 1: não pode concluir se não tem peso
-                            subetapa.total_registros == 0 ||
-                            // Regra 2: se for a subetapa 99, não pode concluir se houver outras ativas
-                            (subetapa.numero_etapa == 99 &&
-                              currentSubetapa.some(
-                                (s) => s.ativa && s.numero_etapa != 99
-                              ))
-                          }
+                        <div
                           style={{
-                            cursor:
+                            display: 'flex',
+                            gap: '1rem',
+                            width: '100%',
+                          }}
+                        >
+                          <button
+                            onClick={() => handleDeletarSubetapa(subetapa)}
+                            className="botao-cancelar-op"
+                            style={{ 
+                              flex: 1,
+                              cursor:
+                                subetapa.total_registros != 0
+                                  ? 'not-allowed'
+                                  : 'pointer'
+                            }}
+                            disabled={subetapa.total_registros != 0}
+                          >
+                            Excluir
+                          </button>
+
+                          <button
+                            type="submit"
+                            className="botao-confirmar-op"
+                            onClick={() => handleConcluirSubetapa(subetapa)}
+                            disabled={
                               subetapa.total_registros == 0 ||
                               (subetapa.numero_etapa == 99 &&
                                 currentSubetapa.some(
                                   (s) => s.ativa && s.numero_etapa != 99
                                 ))
-                                ? 'not-allowed'
-                                : 'pointer'
-                          }}
-                        >
-                          Concluir
-                        </button>
+                            }
+                            style={{
+                              flex: 1,
+                              cursor:
+                                subetapa.total_registros == 0 ||
+                                (subetapa.numero_etapa == 99 &&
+                                  currentSubetapa.some(
+                                    (s) => s.ativa && s.numero_etapa != 99
+                                  ))
+                                  ? 'not-allowed'
+                                  : 'pointer'
+                            }}
+                          >
+                            Concluir
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="botoes-op">
