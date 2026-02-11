@@ -144,21 +144,12 @@ export function OperacaoOrdem({
     }
   }
   
-
-  // async function editarPeso(pesoId, novoPeso) {
-  //   await fetch(`/api/subetapas/pesos/${pesoId}`, {
-  //     method: 'PUT',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({ peso_kg: novoPeso })
-  //   })
-  // }
   async function editarPeso(pesoId, novoPeso) {
     const response = await fetch(`/api/subetapas/pesos/${pesoId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        peso_kg: novoPeso,
-        quantidade_unidades: novoPeso // ⚠️ importante se o backend usar isso
+        peso_kg: novoPeso
       })
     })
   
@@ -168,9 +159,38 @@ export function OperacaoOrdem({
       throw new Error(data?.error || 'Erro ao editar peso')
     }
   
-    return data.data // 👈 O peso atualizado
-  }
+    const pesoAtualizado = data.data
   
+    setSubetapaPesos((prev) =>
+      prev.map((p) =>
+        p.id === pesoId ? { ...p, peso_kg: pesoAtualizado.peso_kg } : p
+      )
+    )
+  
+    setCurrentSubetapa((prev) =>
+      prev.map((sub) => {
+        if (sub.id !== currentSubetapaId) return sub
+  
+        const novosPesos = subetapaPesos.map((p) =>
+          p.id === pesoId
+            ? { ...p, peso_kg: pesoAtualizado.peso_kg }
+            : p
+        )
+  
+        const novoTotal = novosPesos.reduce(
+          (acc, p) => acc + Number(p.peso_kg),
+          0
+        )
+  
+        return {
+          ...sub,
+          peso_total: novoTotal
+        }
+      })
+    )
+  
+    return pesoAtualizado
+  }
 
   const registrarPesoOffline = (peso) => {
     const novoPeso = {
