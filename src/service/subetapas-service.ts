@@ -51,7 +51,7 @@ export class SubetapasService {
         WHERE ordem_producao_id = $1
           AND numero_etapa <> 99
       `,
-      [ordemId]
+      [ordemId],
     )
 
     const ultimaEtapa = ultimaEtapaResult.rows[0]?.ultima_etapa || 0
@@ -81,7 +81,7 @@ export class SubetapasService {
       item_codigo,
       criado_por || 'Sistema',
       ativa,
-      data_ativacao
+      data_ativacao,
     ]
 
     const result = await client.query(query, values)
@@ -90,14 +90,14 @@ export class SubetapasService {
     // Atualizar quantidade de subetapas na linha de produção
     const ordemResult = await client.query(
       `SELECT linha_producao_id FROM ordem_producao WHERE id = $1`,
-      [ordemId]
+      [ordemId],
     )
 
     const linhaProducaoId = ordemResult.rows[0]?.linha_producao_id
     if (linhaProducaoId) {
       await client.query(
         `UPDATE linha_producao SET num_subetapas = num_subetapas + 1 WHERE id = $1`,
-        [linhaProducaoId]
+        [linhaProducaoId],
       )
     }
 
@@ -144,7 +144,7 @@ export class SubetapasService {
       tipo_medida,
       estacao,
       peso_kg,
-      posicao
+      posicao,
     } = data
 
     if (!operador || !peso_kg) {
@@ -169,7 +169,7 @@ export class SubetapasService {
       quantidade_unidades ? parseInt(quantidade_unidades) : 1,
       tipo_medida || 'KG',
       estacao || 'WEB',
-      posicao
+      posicao,
     ]
 
     const result = await client.query(query, values)
@@ -229,7 +229,7 @@ export class SubetapasService {
   async ativarSubetapa(
     subetapaId: number,
     ativa: boolean,
-    data_ativacao: string
+    data_ativacao: string,
   ) {
     const client = await this.getClient()
 
@@ -257,7 +257,7 @@ export class SubetapasService {
           SET status = 'EM_ANDAMENTO'
           WHERE id = $1
         `,
-        [subetapa.ordem_producao_id]
+        [subetapa.ordem_producao_id],
       )
     }
 
@@ -267,7 +267,7 @@ export class SubetapasService {
   async concluirSubetapa(
     subetapaId: number,
     ativa: boolean,
-    data_conclusao: string
+    data_conclusao: string,
   ) {
     const client = await this.getClient()
 
@@ -295,7 +295,7 @@ export class SubetapasService {
         WHERE ordem_producao_id = $1 AND ativa = true
       `
       const checkResult = await client.query(checkQuery, [
-        subetapa.ordem_producao_id
+        subetapa.ordem_producao_id,
       ])
       const ativas = parseInt(checkResult.rows[0].ativas, 10)
 
@@ -306,7 +306,7 @@ export class SubetapasService {
             SET status = 'FECHADA', data_fim = NOW()
             WHERE id = $1
           `,
-          [subetapa.ordem_producao_id]
+          [subetapa.ordem_producao_id],
         )
       }
     }
@@ -379,5 +379,64 @@ export class SubetapasService {
     }
 
     return result.rows[0]
+  }
+
+  async deletarSubetapa(subetapaId: number) {
+    const client = await this.getClient()
+
+    // 1️⃣ Verificar se a subetapa existe
+    const subetapaResult = await client.query(
+      `SELECT id, ordem_producao_id FROM subetapa WHERE id = $1`,
+      [subetapaId],
+    )
+
+    if (subetapaResult.rowCount === 0) {
+      throw new Error('Subetapa não encontrada')
+    }
+
+    const subetapa = subetapaResult.rows[0]
+
+    // 2️⃣ Verificar se existe algum registro de peso
+    const pesoResult = await client.query(
+      `SELECT COUNT(*) as total FROM registro_peso WHERE subetapa_id = $1`,
+      [subetapaId],
+    )
+
+    const totalPesos = parseInt(pesoResult.rows[0].total, 10)
+
+    if (totalPesos > 0) {
+      throw new Error(
+        'Não é possível deletar a subetapa pois existem registros de peso vinculados',
+      )
+    }
+
+    // 3️⃣ Deletar subetapa
+    const deleteResult = await client.query(
+      `DELETE FROM subetapa WHERE id = $1 RETURNING *`,
+      [subetapaId],
+    )
+
+    const subetapaDeletada = deleteResult.rows[0]
+
+    // 4️⃣ Atualizar contador de subetapas da linha de produção
+    const ordemResult = await client.query(
+      `SELECT linha_producao_id FROM ordem_producao WHERE id = $1`,
+      [subetapa.ordem_producao_id],
+    )
+
+    const linhaProducaoId = ordemResult.rows[0]?.linha_producao_id
+
+    if (linhaProducaoId) {
+      await client.query(
+        `
+        UPDATE linha_producao
+        SET num_subetapas = GREATEST(num_subetapas - 1, 0)
+        WHERE id = $1
+        `,
+        [linhaProducaoId],
+      )
+    }
+
+    return subetapaDeletada
   }
 }

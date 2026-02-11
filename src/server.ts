@@ -14,7 +14,6 @@ const sapService = new SAPService()
 
 // Middleware para processar JSON
 app.use(express.json())
-
 // Rota principal - nossa primeira página
 app.get('/', (req: Request, res: Response) => {
   res.send(`
@@ -259,6 +258,55 @@ app.post('/api/ordens/:id/subetapas', async (req, res) => {
         error: err.message,
       })
     }
+  } finally {
+    await service.closeConnection()
+  }
+})
+
+// Deletar subetapa
+app.delete('/api/subetapas/:id', async (req, res) => {
+  const service = new SubetapasService()
+
+  try {
+    const subetapaId = parseInt(req.params.id)
+
+    if (isNaN(subetapaId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID inválido',
+      })
+    }
+
+    const data = await service.deletarSubetapa(subetapaId)
+
+    res.json({
+      success: true,
+      message: 'Subetapa deletada com sucesso',
+      data,
+    })
+  } catch (err: any) {
+    console.error('Erro ao deletar subetapa:', err)
+
+    // 🔹 Regra de negócio (tem peso vinculado)
+    if (err.message.includes('registros de peso')) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      })
+    }
+
+    // 🔹 Subetapa não encontrada
+    if (err.message.includes('não encontrada')) {
+      return res.status(404).json({
+        success: false,
+        error: err.message,
+      })
+    }
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    })
   } finally {
     await service.closeConnection()
   }
